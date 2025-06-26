@@ -1,0 +1,18 @@
+identity:
+  author: lxzero
+  name: excel-tool
+  label:
+    en_US: excel-tool
+    zh_Hans: excel-tool
+    pt_BR: excel-tool
+  description:
+    en_US: Excel reading and writing
+    zh_Hans: Excel reading and writing
+    pt_BR: Excel reading and writing
+  icon: icon.svg
+tools:
+  - tools/readExcel.yaml
+  - tools/writeExcel.yaml
+extra:
+  python:
+    source: provider/excel-tool.py
