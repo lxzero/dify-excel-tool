@@ -1,0 +1,30 @@
+identity:
+  name: readExcel
+  author: lxzero
+  label:
+    en_US: Read Excel
+    zh_Hans: 读Excel
+    pt_BR: Read Excel
+description:
+  human:
+    en_US: Read Excel.
+    zh_Hans: 读Excel。
+    pt_BR: Read Excel.
+  llm: Read Excel.
+parameters:
+  - name: query
+    type: string
+    required: true
+    label:
+      en_US: Query string
+      zh_Hans: 查询语句
+      pt_BR: Query string
+    human_description:
+      en_US: Excel reading and writing
+      zh_Hans: Excel reading and writing
+      pt_BR: Excel reading and writing
+    llm_description: Excel reading and writing
+    form: llm
+extra:
+  python:
+    source: tools/readExcel.py

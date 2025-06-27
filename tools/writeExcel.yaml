@@ -1,0 +1,37 @@
+identity:
+  name: writeExcel
+  author: lxzero
+  label:
+    en_US: Write Excel
+    zh_Hans: 写Excel
+description:
+  human:
+    en_US: Write Excel with formatting support including cell width, height, borders, background color, text color, and merged cells.
+    zh_Hans: 写Excel，支持单元格宽高、边框、背景颜色、文字颜色、合并单元格等格式设置。
+  llm: Write Excel with advanced formatting capabilities including cell dimensions, borders, colors, text styling, and cell merging.
+parameters:
+  - name: json_str
+    type: string
+    required: true
+    label:
+      en_US: JSON String
+      zh_Hans: JSON字符串
+    human_description:
+      en_US: The JSON string to convert. Supports both simple data format and enhanced format with styling and merging options.
+      zh_Hans: 要转换的JSON字符串。支持简单数据格式和带样式选项及合并单元格的增强格式。
+    llm_description: The JSON string to convert. Can be simple data or enhanced format with formatting and cell merging configuration.
+    form: llm
+  - name: filename
+    type: string
+    required: false
+    label:
+      en_US: Excel filename
+      zh_Hans: Excel文件名
+    human_description:
+      en_US: The filename for the generated Excel file
+      zh_Hans: 生成的Excel文件的文件名
+    llm_description: The filename that will be used for the generated Excel file
+    form: llm
+extra:
+  python:
+    source: tools/writeExcel.py
