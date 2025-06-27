@@ -1,7 +1,7 @@
 ## excel-tool
 
 **Author:** lxzero
-**Version:** 0.0.1
+**Version:** 0.0.3
 **Type:** tool
 
 ### Description
@@ -25,6 +25,7 @@ Excel 工具插件，提供强大的 JSON 转 Excel 功能，支持丰富的格�
 - **字体设置**：字体名称、大小、加粗、斜体
 - **对齐方式**：水平对齐、垂直对齐、自动换行
 - **合并单元格**：支持多种格式的单元格合并
+- **起始行设置**：自定义数据从第几行开始写入
 
 ### 使用方法
 
@@ -50,6 +51,7 @@ Excel 工具插件，提供强大的 JSON 转 Excel 功能，支持丰富的格�
     { "姓名": "李四", "年龄": 30, "部门": "市场部" }
   ],
   "format": {
+    "start_row": 3,
     "column_widths": { "A": 15, "B": 10, "C": 20 },
     "row_heights": { "1": 25 },
     "merge_cells": ["A1:C1", { "start": "A2", "end": "B2" }],
@@ -82,8 +84,8 @@ Excel 工具插件，提供强大的 JSON 转 Excel 功能，支持丰富的格�
 ### 依赖项
 
 - `dify_plugin>=0.2.0,<0.3.0`
-- `openpyxl>=3.0.0`
-- `pandas>=1.3.0`
+- `openpyxl==3.1.5`
+- `pandas==2.2.3`
 
 ### 安装
 
@@ -100,3 +102,8 @@ pip install -r requirements.txt
 - 新增合并单元格功能
 - 向后兼容简单格式
 - 添加详细的配置文档
+
+#### v0.0.3
+
+- 支持隐藏标题行
+- 支持自定义起始写入行

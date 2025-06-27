@@ -15,17 +15,29 @@ import json
 class WriteExcelTool(Tool):
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage]:
         json_str = tool_parameters['json_str']
-        
+        filename = tool_parameters.get('filename', 'Formatted Data')
+        debug = tool_parameters.get('debug', False)
+        excel_bytes, filename_with_ext = self.generate_excel_bytes(json_str, filename)
+        if debug:
+            with open(filename_with_ext, "wb") as f:
+                f.write(excel_bytes)
+            yield self.create_text_message(f"[DEBUG] Excel file '{filename_with_ext}' saved to local directory.")
+        yield self.create_text_message(f"Excel file '{filename_with_ext}' generated successfully with formatting and merged cells")
+        yield self.create_blob_message(
+            blob=excel_bytes,
+            meta={
+                "mime_type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                "filename": filename_with_ext
+            }
+        )
+
+    def generate_excel_bytes(self, jsonData: str, filename: str = "Formatted Data"):
+        """生成Excel二进制内容和最终文件名"""
         try:
-            # 解析JSON数据
-            data = json.loads(json_str)
-            
-            # 检查是否是增强格式的JSON
+            data = json.loads(jsonData)
             if isinstance(data, dict) and 'data' in data and 'format' in data:
-                # 增强格式：包含数据和格式信息
                 df_data = data['data']
                 format_config = data.get('format', {})
-                
                 if isinstance(df_data, list):
                     df = pd.DataFrame(df_data)
                 elif isinstance(df_data, dict):
@@ -33,7 +45,6 @@ class WriteExcelTool(Tool):
                 else:
                     df = pd.DataFrame(df_data)
             else:
-                # 简单格式：直接是数据
                 if isinstance(data, list):
                     df = pd.DataFrame(data)
                 elif isinstance(data, dict):
@@ -41,57 +52,29 @@ class WriteExcelTool(Tool):
                 else:
                     df = pd.DataFrame(data)
                 format_config = {}
-                
         except Exception as e:
             raise Exception(f"Error parsing JSON string: {str(e)}")
 
-        # 创建Excel文件
         excel_buffer = BytesIO()
         try:
-            # 使用openpyxl创建带格式的Excel
             wb = Workbook()
             ws = wb.active
-            
-            # 写入数据
-            for r_idx, row in enumerate(dataframe_to_rows(df, index=False, header=True), 1):
+            show_header = format_config.get('show_header', True)
+            # 获取开始行配置，默认为第1行
+            start_row = format_config.get('start_row', 1)
+            for r_idx, row in enumerate(dataframe_to_rows(df, index=False, header=show_header), start_row):
                 for c_idx, value in enumerate(row, 1):
                     cell = ws.cell(row=r_idx, column=c_idx, value=value)
-                    
-                    # 应用格式配置
                     self._apply_cell_format(cell, format_config, r_idx, c_idx)
-            
-            # 应用列宽设置
             self._apply_column_width(ws, format_config)
-            
-            # 应用行高设置
             self._apply_row_height(ws, format_config)
-            
-            # 应用合并单元格设置
             self._apply_merge_cells(ws, format_config)
-            
             wb.save(excel_buffer)
             excel_buffer.seek(0)
-            
         except Exception as e:
             raise Exception(f"Error creating Excel file: {str(e)}")
-
-        # 创建blob消息
-        try:
-            excel_bytes = excel_buffer.getvalue()
-            filename = tool_parameters.get('filename', 'Formatted Data')
-            filename = f"{filename.replace(' ', '_')}.xlsx"
-
-            yield self.create_text_message(f"Excel file '{filename}' generated successfully with formatting and merged cells")
-
-            yield self.create_blob_message(
-                    blob=excel_bytes,
-                    meta={
-                        "mime_type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                        "filename": filename
-                    }
-                )
-        except Exception as e:
-            raise Exception(f"Error creating Excel file message: {str(e)}")
+        filename_with_ext = f"{filename.replace(' ', '_')}.xlsx"
+        return excel_buffer.getvalue(), filename_with_ext
     
     def _normalize_cell_key(self, row_idx, col_idx):
         """标准化单元格键，支持字母和数字两种列索引格式"""

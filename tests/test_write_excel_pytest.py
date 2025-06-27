@@ -98,7 +98,7 @@ class TestWriteExcelToolPytest:
         
         format_config = {
             "cells": {
-                "1,A": {
+                "1,1": {
                     "font": {"bold": True, "size": 14},
                     "background_color": "FFFF00"
                 }
@@ -384,17 +384,224 @@ class TestWriteExcelToolPytest:
 
     @pytest.mark.unit
     def test_default_filename(self):
-        """测试默认文件名"""
-        tool_parameters = {
-            'json_str': json.dumps([{"test": "data"}])
-            # 没有提供filename参数
+        """测试默认文件名处理"""
+        simple_data = [
+            {"姓名": "张三", "年龄": 25, "部门": "技术部"},
+            {"姓名": "李四", "年龄": 30, "部门": "市场部"}
+        ]
+        json_str = json.dumps(simple_data)
+        excel_bytes, filename = self.tool.generate_excel_bytes(json_str)
+        assert filename == "Formatted_Data.xlsx"
+
+    @pytest.mark.unit
+    def test_start_row_default_value(self):
+        """测试 start_row 默认值"""
+        simple_data = [
+            {"姓名": "张三", "年龄": 25, "部门": "技术部"},
+            {"姓名": "李四", "年龄": 30, "部门": "市场部"}
+        ]
+        json_str = json.dumps(simple_data)
+        excel_bytes, filename = self.tool.generate_excel_bytes(json_str)
+        
+        # 验证默认从第1行开始写入
+        from openpyxl import load_workbook
+        from io import BytesIO
+        
+        wb = load_workbook(BytesIO(excel_bytes))
+        ws = wb.active
+        
+        # 检查第1行是否有数据（标题行）
+        assert ws.cell(row=1, column=1).value is not None
+        assert ws.cell(row=1, column=1).value == "姓名"
+
+    @pytest.mark.unit
+    def test_start_row_custom_value(self):
+        """测试自定义 start_row 值"""
+        simple_data = [
+            {"姓名": "张三", "年龄": 25, "部门": "技术部"},
+            {"姓名": "李四", "年龄": 30, "部门": "市场部"}
+        ]
+        data_with_start_row = {
+            "data": simple_data,
+            "format": {
+                "start_row": 3
+            }
         }
+        json_str = json.dumps(data_with_start_row)
+        excel_bytes, filename = self.tool.generate_excel_bytes(json_str)
         
-        # 执行测试
-        messages = list(self.tool._invoke(tool_parameters))
+        from openpyxl import load_workbook
+        from io import BytesIO
         
-        # 验证结果
-        assert len(messages) == 2
+        wb = load_workbook(BytesIO(excel_bytes))
+        ws = wb.active
+        
+        # 检查第1行和第2行应该为空
+        assert ws.cell(row=1, column=1).value is None
+        assert ws.cell(row=2, column=1).value is None
+        
+        # 检查第3行应该有标题行数据
+        assert ws.cell(row=3, column=1).value is not None
+        assert ws.cell(row=3, column=1).value == "姓名"
+        
+        # 检查第4行应该有数据
+        assert ws.cell(row=4, column=1).value is not None
+        assert ws.cell(row=4, column=1).value == "张三"
+
+    @pytest.mark.unit
+    def test_start_row_with_show_header_false(self):
+        """测试 start_row 与 show_header: false 的组合"""
+        simple_data = [
+            {"姓名": "张三", "年龄": 25, "部门": "技术部"},
+            {"姓名": "李四", "年龄": 30, "部门": "市场部"}
+        ]
+        data_with_start_row_no_header = {
+            "data": simple_data,
+            "format": {
+                "start_row": 3,
+                "show_header": False
+            }
+        }
+        json_str = json.dumps(data_with_start_row_no_header)
+        excel_bytes, filename = self.tool.generate_excel_bytes(json_str)
+        
+        from openpyxl import load_workbook
+        from io import BytesIO
+        
+        wb = load_workbook(BytesIO(excel_bytes))
+        ws = wb.active
+        
+        # 检查第1行和第2行应该为空
+        assert ws.cell(row=1, column=1).value is None
+        assert ws.cell(row=2, column=1).value is None
+        
+        # 检查第3行应该有数据（没有标题行）
+        assert ws.cell(row=3, column=1).value is not None
+        assert ws.cell(row=3, column=1).value == "张三"
+        
+        # 检查第4行应该有数据
+        assert ws.cell(row=4, column=1).value is not None
+        assert ws.cell(row=4, column=1).value == "李四"
+
+    @pytest.mark.unit
+    def test_start_row_with_cell_formatting(self):
+        """测试 start_row 与单元格格式化的组合"""
+        simple_data = [
+            {"姓名": "张三", "年龄": 25, "部门": "技术部"},
+            {"姓名": "李四", "年龄": 30, "部门": "市场部"}
+        ]
+        data_with_start_row_and_format = {
+            "data": simple_data,
+            "format": {
+                "start_row": 3,
+                "cells": {
+                    "3,1": {
+                        "font": {"bold": True, "size": 14},
+                        "background_color": "FFFF00"
+                    },
+                    "4,1": {
+                        "font": {"italic": True},
+                        "alignment": {"horizontal": "center"}
+                    }
+                }
+            }
+        }
+        json_str = json.dumps(data_with_start_row_and_format)
+        excel_bytes, filename = self.tool.generate_excel_bytes(json_str)
+        
+        from openpyxl import load_workbook
+        from io import BytesIO
+        
+        wb = load_workbook(BytesIO(excel_bytes))
+        ws = wb.active
+        
+        # 检查第3行第1列的格式（标题行）
+        cell_3_1 = ws.cell(row=3, column=1)
+        assert cell_3_1.font.bold is True
+        assert cell_3_1.font.size == 14
+        assert cell_3_1.fill.start_color.rgb[2:] == "FFFF00"
+        
+        # 检查第4行第1列的格式（数据行）
+        cell_4_1 = ws.cell(row=4, column=1)
+        assert cell_4_1.font.italic is True
+        assert cell_4_1.alignment.horizontal == "center"
+
+    @pytest.mark.unit
+    def test_start_row_with_merge_cells(self):
+        """测试 start_row 与合并单元格的组合"""
+        simple_data = [
+            {"姓名": "张三", "年龄": 25, "部门": "技术部"},
+            {"姓名": "李四", "年龄": 30, "部门": "市场部"}
+        ]
+        data_with_start_row_and_merge = {
+            "data": simple_data,
+            "format": {
+                "start_row": 3,
+                "merge_cells": ["A3:C3"]
+            }
+        }
+        json_str = json.dumps(data_with_start_row_and_merge)
+        excel_bytes, filename = self.tool.generate_excel_bytes(json_str)
+        
+        from openpyxl import load_workbook
+        from io import BytesIO
+        
+        wb = load_workbook(BytesIO(excel_bytes))
+        ws = wb.active
+        
+        # 检查合并单元格
+        merged_ranges = list(ws.merged_cells.ranges)
+        assert len(merged_ranges) == 1
+        assert str(merged_ranges[0]) == "A3:C3"
+
+    @pytest.mark.unit
+    def test_start_row_edge_cases(self):
+        """测试 start_row 边界情况"""
+        simple_data = [
+            {"姓名": "张三", "年龄": 25, "部门": "技术部"},
+            {"姓名": "李四", "年龄": 30, "部门": "市场部"}
+        ]
+        
+        # 测试 start_row = 1（默认值）
+        data_start_row_1 = {
+            "data": simple_data,
+            "format": {
+                "start_row": 1
+            }
+        }
+        json_str = json.dumps(data_start_row_1)
+        excel_bytes, filename = self.tool.generate_excel_bytes(json_str)
+        
+        from openpyxl import load_workbook
+        from io import BytesIO
+        
+        wb = load_workbook(BytesIO(excel_bytes))
+        ws = wb.active
+        
+        # 检查第1行应该有标题行数据
+        assert ws.cell(row=1, column=1).value is not None
+        assert ws.cell(row=1, column=1).value == "姓名"
+        
+        # 测试 start_row = 10（大数值）
+        data_start_row_10 = {
+            "data": simple_data,
+            "format": {
+                "start_row": 10
+            }
+        }
+        json_str = json.dumps(data_start_row_10)
+        excel_bytes, filename = self.tool.generate_excel_bytes(json_str)
+        
+        wb = load_workbook(BytesIO(excel_bytes))
+        ws = wb.active
+        
+        # 检查前9行应该为空
+        for row in range(1, 10):
+            assert ws.cell(row=row, column=1).value is None
+        
+        # 检查第10行应该有标题行数据
+        assert ws.cell(row=10, column=1).value is not None
+        assert ws.cell(row=10, column=1).value == "姓名"
 
 
 class TestWriteExcelToolIntegrationPytest:
